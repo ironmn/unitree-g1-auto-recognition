@@ -1,0 +1,20 @@
+# Windows 11 x64 / Python 3.12: Task 2 vision + OrcaLab camera/SDK runtime.
+# Install with python -m pip install -r requirement.txt
+# Direct dependencies are pinned; this is not a complete transitive lock.
+# Not the official LeRobot collection/training environment.
+orca-lab==26.8.2
+orca-gym[sensors,tools]==26.8.2
+numpy==2.2.6
+scipy==1.16.2
+opencv-python==4.13.0.92
+pillow==12.0.0
+matplotlib==3.10.7
+av==17.0.1
+websockets==16.0
+pyyaml==6.0.3
+ultralytics==8.3.203
+torch==2.8.0
+torchvision==0.23.0
+# Match official runtime pins for launcher compatibility.
+fastmcp==3.4.7
+filelock==3.29.0

@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+requirements-local.txt
+environment-local.yml
+runs/
+weights/
+data/
+*.pt
