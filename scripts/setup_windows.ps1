@@ -19,6 +19,8 @@ Invoke-Checked -Program conda -Arguments @('run', '--no-capture-output', '-n', '
 $RequirementPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'requirement.txt'
 Invoke-Checked -Program conda -Arguments @('run', '--no-capture-output', '-n', 'orcalab', 'python', '-m', 'pip', 'install', '-r', $RequirementPath)
 Invoke-Checked -Program conda -Arguments @('run', '-n', 'orcalab', 'python', '-m', 'pip', 'check')
+$ProjectPath = Split-Path $PSScriptRoot -Parent
+Invoke-Checked -Program conda -Arguments @('run', '-n', 'orcalab', 'python', '-m', 'pip', 'install', '--no-deps', '-e', $ProjectPath)
 $VerifyPath = Join-Path $PSScriptRoot 'verify_environment.py'
 $VerifyArgs = @('run', '--no-capture-output', '-n', 'orcalab', 'python', $VerifyPath)
 if ($TorchBackend -eq 'cu128') { $VerifyArgs += '--require-cuda' }

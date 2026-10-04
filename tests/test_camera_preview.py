@@ -1,13 +1,16 @@
 """Offline protocol and real H.264 decoder checks; no OrcaLab connection."""
+
 import importlib.util
-from pathlib import Path
 import struct
 import unittest
+from pathlib import Path
 
 import av
 import numpy as np
 
-spec = importlib.util.spec_from_file_location("preview", Path(__file__).resolve().parents[1] / "scripts" / "camera_preview.py")
+spec = importlib.util.spec_from_file_location(
+    "preview", Path(__file__).resolve().parents[1] / "scripts" / "camera_preview.py"
+)
 preview = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(preview)
 
@@ -39,7 +42,7 @@ class CameraProtocolTests(unittest.TestCase):
             payload, _ = preview.unpack_message(struct.pack("<Qi", 123 + i, i) + bytes(packet))
             # Exercise fragmented input rather than assume one message = one frame.
             for start in range(0, len(payload), 37):
-                for parsed in decoder.parse(payload[start:start + 37]):
+                for parsed in decoder.parse(payload[start : start + 37]):
                     frames.extend(decoder.decode(parsed))
         for parsed in decoder.parse(b""):
             frames.extend(decoder.decode(parsed))

@@ -1,0 +1,31 @@
+name: Observation infrastructure
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  offline:
+    name: Python 3.12 / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pip install --no-deps -e .
+      - run: python -m pip check
+      - run: ruff check src scripts tests
+      - run: ruff format --check src scripts tests
+      - run: python -m unittest discover -s tests -v
+      - run: g1-observe --help
+      - run: python scripts/observation_collector.py --help
+      - run: g1-dataset --help
+      - run: python -m build --no-isolation
