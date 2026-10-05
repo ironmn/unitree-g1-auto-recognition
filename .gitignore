@@ -8,3 +8,11 @@ runs/
 weights/
 data/
 *.pt
+
+build/
+dist/
+*.egg-info/
+.ruff_cache/
+.coverage
+htmlcov/
+.pytest_cache/

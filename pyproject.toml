@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unitree-g1-auto-recognition"
+version = "0.1.0"
+description = "Aligned camera and robot-state observations for OrcaLab G1"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy==2.2.6",
+    "av==17.0.1",
+    "opencv-python==4.13.0.92",
+    "websockets==16.0",
+    "orca-gym[sensors,tools]==26.8.2",
+]
+
+[project.optional-dependencies]
+dev = ["ruff==0.12.12", "build==1.6.1", "setuptools==82.0.1", "wheel==0.47.0"]
+desktop = ["orca-lab==26.8.2"]
+
+[project.scripts]
+g1-observe = "unitree_vision.collector:main"
+g1-camera-preview = "unitree_vision.camera:main"
+g1-robot-state = "unitree_vision.state:main"
+g1-dataset = "unitree_vision.dataset:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402", "F401"]

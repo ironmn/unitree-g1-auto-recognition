@@ -1,0 +1,18 @@
+# Fixed-pose preview: creates/initializes an SDK environment, never steps physics.
+[collector]
+grpc_address = "localhost:50051"
+host = "localhost"
+agent = "g1_pick"
+cameras = "head,wrist_r"
+profile = "full"
+prompt = "识别面板上的按钮4"
+fps = 10
+timeout = 20
+pair_timeout = 3
+pair_capacity = 64
+camera_buffer = 16
+sample_every = 1
+record = false
+headless = false
+duration = 0
+output = "data/observations"
