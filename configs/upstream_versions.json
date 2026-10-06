@@ -1,0 +1,11 @@
+{
+  "orca_lab": "26.8.2",
+  "orca_gym": "26.8.2",
+  "competition_url": "https://github.com/openverse-orca/Binjiang_Competition.git",
+  "competition_commit": "b7ab885758030dce75f6fe71ac61b97775b292d6",
+  "competition_patch": "docs/official_windows_24fps.patch",
+  "openpi_url": "https://github.com/Physical-Intelligence/openpi.git",
+  "openpi_commit": "981483dca0fd9acba698fea00aa6e52d56a66c58",
+  "pretrained_checkpoint": "gs://openpi-assets/checkpoints/pi05_base/params",
+  "pretrained_finetuning_verified": false
+}

@@ -1,0 +1,69 @@
+diff --git a/src/dataStorage/lerobot_data_storage.py b/src/dataStorage/lerobot_data_storage.py
+index 8e4ed12..18328e9 100644
+--- a/src/dataStorage/lerobot_data_storage.py
++++ b/src/dataStorage/lerobot_data_storage.py
+@@ -425,9 +425,11 @@ class _StatsImageWriter:
+                     bgr = image[:, :, ::-1]
+                 else:
+                     bgr = image
+-                ok = cv2.imwrite(str(fpath), bgr, quality_flag)
++                # OpenCV imwrite may fail silently for Unicode Windows paths.
++                ok, encoded = cv2.imencode('.jpg', bgr, quality_flag)
+                 if not ok:
+-                    _log.warning("[LeRobot] 图像统计文件写入失败")
++                    raise RuntimeError('Statistics JPEG encoding failed')
++                encoded.tofile(str(fpath))
+             except Exception as e:
+                 _log.warning("[LeRobot] 图像统计文件写入失败")
+             finally:
+diff --git a/src/examples/dataCollection/unitree_g1/g1_pick_osc_replay_lerobot.py b/src/examples/dataCollection/unitree_g1/g1_pick_osc_replay_lerobot.py
+index 89d7601..3233c4a 100644
+--- a/src/examples/dataCollection/unitree_g1/g1_pick_osc_replay_lerobot.py
++++ b/src/examples/dataCollection/unitree_g1/g1_pick_osc_replay_lerobot.py
+@@ -119,7 +119,7 @@ class G1OscParquetReplayDevice(AbstractDevice):
+         r_grip: Controller2F85Reverse,
+         task_status: TaskStatusController,
+         data: dict,
+-        steps_per_frame: int,
++        steps_per_frame: float,
+         track_ki: float = 0.0,
+         track_clamp: float = 0.08,
+         track_log_every: int = 0,
+@@ -133,7 +133,7 @@ class G1OscParquetReplayDevice(AbstractDevice):
+         self.r_quat = np.asarray(data["r_quat_b"], dtype=np.float32)
+         self.r_grip_motor = np.asarray(data["r_grip"], dtype=np.float32)
+         self.n = int(data["n_frames"])
+-        self.steps_per_frame = max(1, int(steps_per_frame))
++        self.steps_per_frame = max(1.0, float(steps_per_frame))
+         self.track_ki = max(0.0, float(track_ki))
+         self.track_clamp = abs(float(track_clamp))
+         self.track_log_every = max(0, int(track_log_every))
+@@ -156,7 +156,7 @@ class G1OscParquetReplayDevice(AbstractDevice):
+     def update(self):
+         call = self._call_count
+         self._call_count += 1
+-        frame = call // self.steps_per_frame
++        frame = int(call / self.steps_per_frame + 1e-9)
+         if frame >= self.n:
+             if self.task_status.current_status == TaskStatus.RUNNING:
+                 self.task_status.update_task_status(True)
+@@ -204,6 +204,8 @@ def main() -> None:
+         help="回放次数（默认播完数据集；集数不够则从头循环凑满）",
+     )
+     parser.add_argument("--loop", action="store_true", help="全部播完后从头循环")
++    parser.add_argument('--replay_fps', type=float, default=None,
++                        help='Replay cadence; supports fractional control steps per frame (e.g. 24 FPS at dt=5ms).')
+     parser.add_argument(
+         "--steps_per_frame",
+         type=int,
+@@ -259,6 +261,10 @@ def main() -> None:
+         playlist = [base[i % len(base)] for i in range(args.episodes)]
+ 
+     env_dt = float(args.time_step) * int(args.frame_skip)
++    if args.replay_fps is not None:
++        if not np.isfinite(args.replay_fps) or not 0 < args.replay_fps <= 1.0 / env_dt:
++            parser.error('--replay_fps must be positive and no faster than the control rate')
++        args.steps_per_frame = 1.0 / (args.replay_fps * env_dt)
+     install_osc_patches(
+         dls_lambda=args.dls_lambda,
+         dls_sigma_th=args.dls_sigma_th,

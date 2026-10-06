@@ -1,8 +1,24 @@
 # Unitree G1 自主视觉观测工程
 
-为 OrcaLab 26.8.2 的宇树 G1 提供相机观测、关节状态和严格按帧号配对的数据采集。当前版本 **0.1.0** 是后续识别与 OpenPI 策略开发的基础，尚未实现目标识别、策略训练、动作执行或成功判断。
+为 OrcaLab 26.8.2 的宇树 G1 提供相机观测、关节状态和严格按帧号配对的数据采集。当前版本 **0.2.0** 包含观测采集、官方三动作示范、批量质量筛选、统一目标解析和 OpenPI 训练准备。正式预训练微调与自主闭环控制尚未验证。
 
 头部与右腕图像通过 H.264 WebSocket 接收；状态来自控制程序的本地 MuJoCo；图像和状态使用相同 `simulate_index`。无法配对的帧会跳过并计数，不使用最近一帧替代。
+
+## 新环境快速开始
+
+优先阅读 [迁移与快速开始](docs/QUICKSTART.md)：区分观测开发、官方采集与 Linux OpenPI 训练环境，并提供数据迁移、校验和训练命令。
+
+| 工作流 | 入口 | 说明 |
+|---|---|---|
+| 观测、相机、关节 | `src/unitree_vision/`、兼容脚本 | [操作手册](docs/operations.md) |
+| 目标解析、成功判定 | `run_task_goal.py` | [目标契约](docs/task_goals.md) |
+| 官方采集、回放 | `run_official_demo.py`、PowerShell 包装器 | [采集补丁与审计](docs/official_demo_24fps.md) |
+| 批量采集、质量筛选 | `batch_collect.py`、`verify_batch.py` | [批量采集](docs/batch_collection.md) |
+| OpenPI 数据与训练统计 | `g1_openpi_data.py`、`prepare_multitask_training.py` | [训练状态](docs/multitask_training_batch60.md) |
+| 正式/调试训练 | `train_g1_openpi.py` / `check_openpi_training.py` | [两种训练的区别](docs/openpi_training_chain.md) |
+| 数据迁移 | `export_training_bundle.py` | [迁移步骤](docs/QUICKSTART.md#2-携带已有-60-条示范) |
+
+首批三类各 20 条有效示范，共 20,301 帧，24 FPS、双路 1280×960；48/12 条按 episode 分成训练/验证。48 条训练集的 16,323 帧统计已准备。视频与权重不在 Git 中，使用独立迁移包。成功判据为开发版，非官方裁判；本批仅覆盖同场景轨迹变化。
 
 ## 安装与启动
 

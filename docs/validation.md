@@ -17,3 +17,15 @@
 Linux 云工作区、Python 3.12，执行原协议/状态测试及新增配置、故障写入、索引恢复和生命周期测试；检查 CLI、兼容脚本、包构建和 wheel 导入。CI 配置同时覆盖 Windows/Linux，但最终 CI 是否通过应以 GitHub Actions 结果为准。
 
 本会话没有用户电脑的连接，也没有可用 OrcaLab 场景/GPU 取流；重构版本的 Windows、NVENC、真实相机和运动过程还须按 operations.md 在本机复测。没有宣称目标识别、策略模型或动作闭环已通过。
+# 0.2.0 集成验证（2026-10-06）
+
+在独立 Windows Python 3.12 环境从 `requirements-dev.txt` 安装，保留 0.1.0 包化观测实现，新增采集/目标/训练工具：
+
+- 58 项离线测试通过；Ruff lint/format 与依赖一致性检查通过。
+- wheel 与 sdist 构建成功；sdist 含脚本、JSON/YAML/TOML 配置和官方补丁，不含本地数据。
+- 首批 60 条示范的报告、划分、哈希与六条真实 OpenPI 输入样本复核通过。
+- 本地数据迁移 ZIP 包含 1,185 个文件，逐文件 SHA-256 验证通过；数据未上传 GitHub。
+- PowerShell 入口语法检查通过。本次不重新执行机器人动作；已有动作采集实测记录见对应文档。
+- Linux 正式预训练微调、策略部署和官方裁判仍未验证。CI 的 Linux 测试仅覆盖离线工程能力。
+
+以下为上一版本记录。
