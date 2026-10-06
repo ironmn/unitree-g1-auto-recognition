@@ -1,0 +1,16 @@
+# Use the currently loaded competition layout; no spawning or randomization.
+level_name: binjiang_competition_2026
+type: pick_and_place
+data_collection:
+  agent_joint_prefix: g1_pick_
+light:
+  names: [spotlight1]
+  spawnable: [prefabs/light]
+  random:
+    position: false
+    rotation: false
+    center: [0, 0, 0]
+    bound_position: [[0, 0], [0, 0], [0, 0]]
+    bound_rotation: [[0, 0], [0, 0], [0, 0]]
+    nums: [1, 1]
+    cycle: 20

@@ -1,0 +1,8 @@
+{
+  "schema_version":1,
+  "datasets":[
+    {"name":"press","path":"../data/official_demo_24fps/dataset_verified","expected_prompt":"按压停止按钮","target_id":"cabinet02.stop","evaluation":"../data/task_goals_v1/capture_text.json"},
+    {"name":"rotate","path":"../data/multitask/rotate_clearance/dataset_verified","expected_prompt":"旋转旋钮","target_id":"cabinet02.knob","evaluation":"../data/multitask/rotate_clearance/goal_evaluation.json"},
+    {"name":"toggle","path":"../data/multitask/toggle/dataset_verified","expected_prompt":"拨动拨杆式按钮","target_id":"cabinet03.toggle","evaluation":"../data/multitask/toggle/goal_evaluation.json"}
+  ]
+}

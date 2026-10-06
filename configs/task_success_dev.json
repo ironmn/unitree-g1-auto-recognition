@@ -1,0 +1,21 @@
+{
+  "schema_version":1,
+  "note":"Thresholds for local development only. 1.5 mm is NOT an official press criterion. Positive travel sign remains to be physically calibrated. Angle thresholds follow the manual, but direction/baseline/hold are local assumptions.",
+  "targets":{
+    "cabinet02.stop":{"threshold":0.0015,"release_threshold":0.0005,"direction":1,"unit":"m","hold_s":0.08,"max_gap_s":0.15,"timeout_s":180,"source":"uncalibrated_development_proxy"},
+    "cabinet02.emergency_stop":{"threshold":0.0015,"release_threshold":0.0005,"direction":1,"unit":"m","hold_s":0.08,"max_gap_s":0.15,"timeout_s":180,"source":"uncalibrated_development_proxy"},
+    "cabinet02.start":{"threshold":0.0015,"release_threshold":0.0005,"direction":1,"unit":"m","hold_s":0.08,"max_gap_s":0.15,"timeout_s":180,"source":"uncalibrated_development_proxy"},
+    "cabinet02.knob":{"threshold":0.2617993877991494,"direction":1,"unit":"rad","hold_s":0.08,"max_gap_s":0.15,"timeout_s":180,"source":"manual_angle_with_local_direction_and_hold"},
+    "cabinet03.toggle":{"threshold":0.2617993877991494,"direction":1,"unit":"rad","hold_s":0.08,"max_gap_s":0.15,"timeout_s":180,"source":"manual_angle_with_local_direction_and_hold"}
+  },
+  "non_target_monitors":{
+    "Group_Interactive_DistributionBox_02_stop_button_joint":0.0015,
+    "Group_Interactive_DistributionBox_02_halt_button_joint":0.0015,
+    "Group_Interactive_DistributionBox_02_initiate_button_joint":0.0015,
+    "Group_Interactive_DistributionBox_02_limit_switch_joint":0.0015,
+    "Group_Interactive_DistributionBox_02_proximity_switch_joint":0.0015,
+    "Group_Interactive_DistributionBox_02_button_H":0.0015,
+    "Group_Interactive_DistributionBox_02_knob_switch_joint":0.2617993877991494,
+    "Group_Interactive_DistributionBox_03_Switch_distributionbox_03_switch_joint":0.2617993877991494
+  }
+}

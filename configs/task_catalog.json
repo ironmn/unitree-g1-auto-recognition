@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "note": "Reference-image boxes are manually reviewed examples, not detector outputs. Joint names are evaluator-only simulator bindings.",
+  "targets": [
+    {"id":"cabinet02.stop", "cabinet_id":"cabinet02", "name":"停止按钮", "aliases":["stop button"], "type":"push_button",
+     "scene_joint":"Group_Interactive_DistributionBox_02_stop_button_joint",
+     "detections":[{"image_id":"codex-clipboard-7300ddd4-1c37-4699-9501-82add39419df.png", "camera":"user_reference", "bbox_xyxy_norm":[0.278,0.095,0.345,0.185], "confidence":1.0, "source":"manual_review_of_user_reference"}]},
+    {"id":"cabinet02.emergency_stop", "cabinet_id":"cabinet02", "name":"急停按钮", "aliases":["emergency stop"], "type":"push_button",
+     "scene_joint":"Group_Interactive_DistributionBox_02_halt_button_joint",
+     "detections":[{"image_id":"codex-clipboard-7300ddd4-1c37-4699-9501-82add39419df.png", "camera":"user_reference", "bbox_xyxy_norm":[0.426,0.103,0.487,0.190], "confidence":1.0, "source":"manual_review_of_user_reference"}]},
+    {"id":"cabinet02.start", "cabinet_id":"cabinet02", "name":"启动按钮", "aliases":["initiate button"], "type":"push_button",
+     "scene_joint":"Group_Interactive_DistributionBox_02_initiate_button_joint",
+     "detections":[{"image_id":"codex-clipboard-7300ddd4-1c37-4699-9501-82add39419df.png", "camera":"user_reference", "bbox_xyxy_norm":[0.138,0.090,0.209,0.180], "confidence":1.0, "source":"manual_review_of_user_reference"}]},
+    {"id":"cabinet02.knob", "cabinet_id":"cabinet02", "name":"旋钮开关", "aliases":[], "type":"rotary", "scene_joint":"Group_Interactive_DistributionBox_02_knob_switch_joint", "detections":[]},
+    {"id":"cabinet03.toggle", "cabinet_id":"cabinet03", "name":"拨杆开关", "aliases":[], "type":"toggle", "scene_joint":"Group_Interactive_DistributionBox_03_Switch_distributionbox_03_switch_joint", "detections":[]}
+  ]
+}
