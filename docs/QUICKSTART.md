@@ -10,7 +10,7 @@
 | 仿真动作采集 | Windows OrcaLab 26.8.2，官方独立采集环境 | 官方 Binjiang_Competition 安装指南 |
 | 正式 Pi05 LoRA | Linux NVIDIA GPU；官方估计显存 >22.5 GB | 固定提交 OpenPI 的 `uv.lock` |
 
-不要将本仓库 Windows `requirement.txt` 或开发锁安装进 OpenPI 环境。OpenPI 工具直接从源码脚本运行，不需要安装本项目的 OrcaGym 包依赖。当前只有 Windows CPU 调试训练通过，正式 Linux 微调还未实测。
+不要将本仓库 Windows `requirement.txt` 或开发锁安装进 OpenPI 环境。OpenPI 工具直接从源码脚本运行，不需要安装本项目的 OrcaGym 包依赖。WSL 冻结视觉编码器的真实 Pi05 微调已验证 100 步，原配置在本机显存不足；配置见 Linux 手册第十三节。
 
 ## 1. 离线开发与自检
 
@@ -53,6 +53,8 @@ python scripts/verify_batch.py data/batch_20261005
 目录应为 `项目/data/batch_20261005/manifest_train.json`。训练 48 条、验证 12 条，按完整 episode 分离。`configs/multitask_g1.json` 仅引用历史三条试验数据；新训练使用本批次清单。
 
 ## 3. 在 Linux 准备 OpenPI
+
+完整逐步操作及验收标准见 [Linux 微调指导手册](LINUX_FINETUNING_GUIDE.md)。以下是简版命令。
 
 先安装 Git、Git LFS、uv 和适配 GPU 的 NVIDIA 驱动；确认 `nvidia-smi`。在本仓库相邻位置克隆官方源码：
 
@@ -119,7 +121,11 @@ python scripts/batch_collect.py --output data/new_batch --resume
 
 ## 能力与数据边界
 
+训练完成后，按 [独立验证集离线评估](offline_evaluation.md) 使用 `evaluate_g1_openpi.py` 比较官方基础权重与训练检查点；它不创建优化器或连接机器人。
+
+随后按 [Windows OrcaLab 模型闭环评估](orcalab_model_evaluation.md) 启动 Linux 模型服务与 Windows 官方 OSC 控制器。当前 100 步检查点的首轮三任务测试为 0/3 开发判据通过，详细结果见[实测报告](evaluation_results_20261007.md)。
+
 - 原始观测模块：45/30/15 维实测关节状态，按帧号配对，`action=null`。
 - 官方动作示范：18 维双臂末端位姿（基座坐标、xyzw）和夹爪控制值；`action[t]=state[t+1]`，不可再偏移；相机采用最近帧采样，尚非严格物理同帧。
 - 目标解析支持文字/人工参考框，尚无通用检测/OCR。开发成功判定使用场景关节，不是官方裁判。
-- 本批只变化接近路点和动作时长；柜体和光照不变，不能证明跨场景泛化。没有可直接下发给机器人的正式训练策略。
+- 本批只变化接近路点和动作时长；柜体和光照不变，不能证明跨场景泛化。已实现带约束的仿真模型控制入口，当前检查点尚未完成三类操作，不具备真机部署依据。

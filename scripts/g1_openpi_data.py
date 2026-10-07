@@ -7,13 +7,17 @@ Only full action windows within each episode are used for this first baseline.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import json
+import os
+import uuid
 from pathlib import Path
 
 import av
 import numpy as np
 import pyarrow.parquet as pq
 from PIL import Image
+from PIL import __version__ as pillow_version
 
 CAMERAS = {
     "base_0_rgb": "observation.images.cam_head",
@@ -28,6 +32,47 @@ def resize_pad(rgb, size=224):
     canvas = Image.new("RGB", (size, size))
     canvas.paste(im, ((size - im.width) // 2, (size - im.height) // 2))
     return np.asarray(canvas)
+
+
+def read_video_images(path, n, image_cache=None):
+    """Decode identical RGB frames; optional read-only, content-addressed mmap."""
+    path = Path(path)
+    if image_cache is None:
+        with av.open(str(path)) as container:
+            frames = [resize_pad(f.to_ndarray(format="rgb24")) for f in container.decode(video=0)]
+        if len(frames) != n:
+            raise ValueError("Video/table mismatch")
+        return np.stack(frames)
+    with path.open("rb") as stream:
+        video_digest = hashlib.file_digest(stream, "sha256").digest()
+    version = f"g1_rgb224_v1:{n}:{av.__version__}:{pillow_version}".encode()
+    name = hashlib.sha256(video_digest + version).hexdigest() + ".npy"
+    directory = Path(image_cache).resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / name
+    if not target.exists():
+        temporary = directory / (name + "." + uuid.uuid4().hex + ".partial")
+        frames = np.lib.format.open_memmap(
+            temporary, mode="w+", dtype=np.uint8, shape=(n, 224, 224, 3)
+        )
+        count = 0
+        try:
+            with av.open(str(path)) as container:
+                for frame in container.decode(video=0):
+                    if count >= n:
+                        raise ValueError("Video/table mismatch")
+                    frames[count] = resize_pad(frame.to_ndarray(format="rgb24"))
+                    count += 1
+            if count != n:
+                raise ValueError("Video/table mismatch")
+            frames.flush()
+        finally:
+            del frames
+        os.replace(temporary, target)
+    frames = np.load(target, mmap_mode="r", allow_pickle=False)
+    if frames.shape != (n, 224, 224, 3) or frames.dtype != np.uint8:
+        raise ValueError("Invalid image cache shape or dtype")
+    return frames
 
 
 @dataclasses.dataclass(frozen=True)
@@ -80,7 +125,7 @@ class G1Outputs:
 class G1Dataset:
     """Local, offline decoder; deliberately avoids hub access and codec ambiguity."""
 
-    def __init__(self, root, horizon=24):
+    def __init__(self, root, horizon=24, *, image_cache=None):
         self.root, self.horizon = Path(root), horizon
         if horizon <= 0:
             raise ValueError("horizon must be positive")
@@ -109,13 +154,7 @@ class G1Dataset:
             images = {}
             for key in CAMERAS.values():
                 path = self.root / self.info["video_path"].format(video_key=key, **kwargs)
-                with av.open(str(path)) as container:
-                    frames = [
-                        resize_pad(f.to_ndarray(format="rgb24")) for f in container.decode(video=0)
-                    ]
-                if len(frames) != n:
-                    raise ValueError("Video/table mismatch")
-                images[key] = np.stack(frames)
+                images[key] = read_video_images(path, n, image_cache)
             self.episodes.append(
                 {
                     "id": eid,
@@ -177,7 +216,7 @@ class G1MultiTaskDataset(G1Dataset):
     Round-robin oversampling prevents a long trajectory dominating a short one.
     """
 
-    def __init__(self, manifest, horizon=24):
+    def __init__(self, manifest, horizon=24, *, image_cache=None):
         manifest = Path(manifest).resolve()
         spec = json.loads(manifest.read_text(encoding="utf-8"))
         if spec.get("schema_version") != 1 or not spec.get("datasets"):
@@ -201,7 +240,11 @@ class G1MultiTaskDataset(G1Dataset):
             if path in seen_paths:
                 raise ValueError("Duplicate source dataset")
             seen_paths.add(path)
-            ds = G1Dataset(path, horizon)
+            ds = (
+                G1Dataset(path, horizon)
+                if image_cache is None
+                else G1Dataset(path, horizon, image_cache=image_cache)
+            )
             if set(ds.tasks.values()) != {source["expected_prompt"]}:
                 raise ValueError("Manifest task does not match actual recorded task")
             prompt = source["expected_prompt"]
@@ -241,5 +284,6 @@ class G1MultiTaskDataset(G1Dataset):
         }
 
 
-def load_g1_dataset(path, horizon=24):
-    return G1MultiTaskDataset(path, horizon) if Path(path).is_file() else G1Dataset(path, horizon)
+def load_g1_dataset(path, horizon=24, *, image_cache=None):
+    cls = G1MultiTaskDataset if Path(path).is_file() else G1Dataset
+    return cls(path, horizon, image_cache=image_cache)
