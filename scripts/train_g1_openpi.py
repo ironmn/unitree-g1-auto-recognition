@@ -28,6 +28,17 @@ def main():
     p.add_argument("--batch-size", type=int, default=1)
     p.add_argument("--steps", type=int, default=1000)
     p.add_argument("--train", action="store_true")
+    p.add_argument(
+        "--freeze-vision",
+        action="store_true",
+        help="Freeze the pretrained image encoder; changes trainable parameters for a lower VRAM experiment",
+    )
+    p.add_argument("--image-cache", type=Path, help="Content-addressed read-only RGB mmap cache")
+    p.add_argument(
+        "--memory-efficient-restore",
+        action="store_true",
+        help="Restore directly into final training dtypes with bounded I/O concurrency",
+    )
     args = p.parse_args()
     if args.steps < 1 or args.batch_size < 1:
         p.error("steps and batch-size must be positive")
@@ -68,6 +79,20 @@ def main():
         action_expert_variant="gemma_300m_lora",
     )
     config_name = "pi05_g1_multitask_lora" if args.dataset.is_file() else "pi05_g1_buttons_lora"
+    freeze_filter = model.get_freeze_filter()
+    if args.freeze_vision:
+        from flax import nnx
+        from openpi.shared import nnx_utils
+
+        freeze_filter = nnx.Any(freeze_filter, nnx_utils.PathRegex(".*PaliGemma.*img.*"))
+        config_name += "_frozen_vision"
+    loader = weight_loaders.CheckpointWeightLoader(
+        "gs://openpi-assets/checkpoints/pi05_base/params"
+    )
+    if args.memory_efficient_restore:
+        from g1_openpi_memory import MemoryEfficientCheckpointWeightLoader
+
+        loader = MemoryEfficientCheckpointWeightLoader(loader.params_path)
     config = cfg.TrainConfig(
         name=config_name,
         exp_name=args.experiment or config_name + "_v1",
@@ -76,10 +101,8 @@ def main():
             repo_id="g1_buttons_local",
             assets=cfg.AssetsConfig(assets_dir=str(args.assets.resolve()), asset_id="g1_buttons"),
         ),
-        weight_loader=weight_loaders.CheckpointWeightLoader(
-            "gs://openpi-assets/checkpoints/pi05_base/params"
-        ),
-        freeze_filter=model.get_freeze_filter(),
+        weight_loader=loader,
+        freeze_filter=freeze_filter,
         ema_decay=None,
         batch_size=args.batch_size,
         num_workers=0,
@@ -92,6 +115,7 @@ def main():
             "fps": 24,
             "robot_action_dim": 18,
             "action_representation": "absolute_base_pose_xyzw_gripper",
+            "freeze_vision": args.freeze_vision,
         },
     )
     print(
@@ -105,6 +129,9 @@ def main():
                 "robot_dim": 18,
                 "devices": [str(d) for d in jax.devices()],
                 "mode": "train" if args.train else "inspect_only",
+                "image_cache": str(args.image_cache.resolve()) if args.image_cache else None,
+                "memory_efficient_restore": args.memory_efficient_restore,
+                "freeze_vision": args.freeze_vision,
             },
             indent=2,
         )
@@ -120,7 +147,9 @@ def main():
     from openpi.training import data_loader
 
     original = data_loader.create_torch_dataset
-    dataset = load_g1_dataset(args.dataset, horizon=model.action_horizon)
+    dataset = load_g1_dataset(
+        args.dataset, horizon=model.action_horizon, image_cache=args.image_cache
+    )
 
     def create_dataset(data_config, action_horizon, model_config):
         if data_config.repo_id == "g1_buttons_local":

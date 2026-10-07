@@ -10,7 +10,7 @@
 | 仿真动作采集 | Windows OrcaLab 26.8.2，官方独立采集环境 | 官方 Binjiang_Competition 安装指南 |
 | 正式 Pi05 LoRA | Linux NVIDIA GPU；官方估计显存 >22.5 GB | 固定提交 OpenPI 的 `uv.lock` |
 
-不要将本仓库 Windows `requirement.txt` 或开发锁安装进 OpenPI 环境。OpenPI 工具直接从源码脚本运行，不需要安装本项目的 OrcaGym 包依赖。当前只有 Windows CPU 调试训练通过，正式 Linux 微调还未实测。
+不要将本仓库 Windows `requirement.txt` 或开发锁安装进 OpenPI 环境。OpenPI 工具直接从源码脚本运行，不需要安装本项目的 OrcaGym 包依赖。WSL 冻结视觉编码器的真实 Pi05 微调已验证 100 步，原配置在本机显存不足；配置见 Linux 手册第十三节。
 
 ## 1. 离线开发与自检
 
@@ -53,6 +53,8 @@ python scripts/verify_batch.py data/batch_20261005
 目录应为 `项目/data/batch_20261005/manifest_train.json`。训练 48 条、验证 12 条，按完整 episode 分离。`configs/multitask_g1.json` 仅引用历史三条试验数据；新训练使用本批次清单。
 
 ## 3. 在 Linux 准备 OpenPI
+
+完整逐步操作及验收标准见 [Linux 微调指导手册](LINUX_FINETUNING_GUIDE.md)。以下是简版命令。
 
 先安装 Git、Git LFS、uv 和适配 GPU 的 NVIDIA 驱动；确认 `nvidia-smi`。在本仓库相邻位置克隆官方源码：
 
@@ -118,6 +120,8 @@ python scripts/batch_collect.py --output data/new_batch --resume
 单条采集 PowerShell 入口可用 `-Python python` 或传入解释器完整路径，`-OfficialRoot` 可更改官方仓库位置。更多操作见 [批量采集](batch_collection.md)、[官方采集](official_demo_24fps.md)。
 
 ## 能力与数据边界
+
+训练完成后，按 [独立验证集离线评估](offline_evaluation.md) 使用 `evaluate_g1_openpi.py` 比较官方基础权重与训练检查点；它不创建优化器或连接机器人。
 
 - 原始观测模块：45/30/15 维实测关节状态，按帧号配对，`action=null`。
 - 官方动作示范：18 维双臂末端位姿（基座坐标、xyzw）和夹爪控制值；`action[t]=state[t+1]`，不可再偏移；相机采用最近帧采样，尚非严格物理同帧。
