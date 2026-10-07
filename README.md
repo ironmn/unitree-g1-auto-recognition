@@ -1,6 +1,6 @@
 # Unitree G1 自主视觉观测工程
 
-为 OrcaLab 26.8.2 的宇树 G1 提供相机观测、关节状态和严格按帧号配对的数据采集。当前版本 **0.2.0** 包含观测采集、官方三动作示范、批量质量筛选、统一目标解析和 OpenPI 训练准备。本地 WSL 已验证冻结视觉编码器的 Pi05 双 LoRA 100 步微调；自主闭环控制尚未验证。
+为 OrcaLab 26.8.2 的宇树 G1 提供相机观测、关节状态和严格按帧号配对的数据采集。当前版本 **0.2.0** 包含观测采集、官方三动作示范、批量质量筛选、统一目标解析和 OpenPI 训练准备。本地 WSL 已完成冻结视觉编码器的 Pi05 双 LoRA 100 步微调、独立离线评估和 Windows OrcaLab 模型闭环测试；首轮三任务各一次，开发判据通过 **0/3**，当前模型还不能稳定完成操作。
 
 头部与右腕图像通过 H.264 WebSocket 接收；状态来自控制程序的本地 MuJoCo；图像和状态使用相同 `simulate_index`。无法配对的帧会跳过并计数，不使用最近一帧替代。
 
@@ -12,6 +12,8 @@
 
 训练后使用 [独立验证集离线评估](docs/offline_evaluation.md) 比较训练前后的验证损失、末端位姿和夹爪预测误差，保留逐示范结果。离线误差不能替代仿真成功率。
 
+将模型接入本地仿真请按 [Windows OrcaLab 闭环评估](docs/orcalab_model_evaluation.md) 启动 WSL 推理服务和 Windows 控制器。[本次实测结果](docs/evaluation_results_20261007.md) 汇总离线误差、实际操作结果和推理时延；未接入官方裁判。
+
 | 工作流 | 入口 | 说明 |
 |---|---|---|
 | 观测、相机、关节 | `src/unitree_vision/`、兼容脚本 | [操作手册](docs/operations.md) |
@@ -20,6 +22,7 @@
 | 批量采集、质量筛选 | `batch_collect.py`、`verify_batch.py` | [批量采集](docs/batch_collection.md) |
 | OpenPI 数据与训练统计 | `g1_openpi_data.py`、`prepare_multitask_training.py` | [训练状态](docs/multitask_training_batch60.md) |
 | 正式/调试训练 | `train_g1_openpi.py` / `check_openpi_training.py` | [两种训练的区别](docs/openpi_training_chain.md) |
+| 离线/仿真评估 | `evaluate_g1_openpi.py` / `test_g1_openpi_orcalab.py` | [离线说明](docs/offline_evaluation.md)、[闭环说明](docs/orcalab_model_evaluation.md) |
 | 数据迁移 | `export_training_bundle.py` | [迁移步骤](docs/QUICKSTART.md#2-携带已有-60-条示范) |
 
 首批三类各 20 条有效示范，共 20,301 帧，24 FPS、双路 1280×960；48/12 条按 episode 分成训练/验证。48 条训练集的 16,323 帧统计已准备。视频与权重不在 Git 中，使用独立迁移包。成功判据为开发版，非官方裁判；本批仅覆盖同场景轨迹变化。

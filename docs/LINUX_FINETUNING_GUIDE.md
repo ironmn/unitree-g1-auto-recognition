@@ -2,11 +2,9 @@
 
 更新：2026-10-07。适用于本项目提交 `2bf051921dc96e759b473bc254871aa3dc9bf955` 与 OpenPI 提交 `981483dca0fd9acba698fea00aa6e52d56a66c58`。
 
-**状态：已在 WSL Ubuntu 26.04 + RTX 5080 上完成真实 Pi05 预训练模型的 100 步微调，并完成训练前后模型的独立离线评估。** 原配置在反向传播时显存不足；成功配置额外冻结视觉编码器，并优化主机内存，详见第十三节。离线评估使用 12 条留出示范，完整指标和工件核验通过；模型误差仍大于保持当前状态的参照。Windows OrcaLab 模型闭环操作及成功率尚待测试，不能用离线结果代替。[离线评估操作说明](offline_evaluation.md)与[本次实测结果](evaluation_results_20261007.md)记录详细证据。
+**状态：已在 WSL Ubuntu 26.04 + RTX 5080 上完成真实 Pi05 预训练模型的 100 步微调、训练前后独立离线评估，以及 Windows OrcaLab 模型闭环测试。** 原配置在反向传播时显存不足；成功配置额外冻结视觉编码器，并优化主机内存，详见第十三节。离线评估使用 12 条留出示范，完整指标和工件核验通过；模型误差仍大于保持当前状态的参照。闭环首轮每任务一次、30 秒，开发判据通过 0/3，尚未获得官方裁判成功率。[离线说明](offline_evaluation.md)、[闭环说明](orcalab_model_evaluation.md)与[实测结果](evaluation_results_20261007.md)记录详细证据。
 
-前十二节的基线提交为 `2bf0519`；第十三节的新选项来自本次本地代码扩展，旧基线没有这些选项。迁移时使用 `data/exports/g1_wsl_training_code_20261007.zip` 内的完整源码，或包含这些新增文件的工作目录。
-
-该源码 ZIP 是训练完成时的快照，早于新增离线评估入口。要复现离线评估，另需包含 `scripts/evaluate_g1_openpi.py` 与 `scripts/g1_openpi_eval.py` 的当前仓库源码；不要将旧训练源码包当作完整评估代码包。
+前十二节的原基线提交为 `2bf0519`，没有第十三节低显存选项和新评估入口。本次完整源码已同步 [GitHub PR #3](https://github.com/ironmn/unitree-g1-auto-recognition/pull/3) 的 `feat/openpi-evaluation-orcalab-20261007` 分支。新环境可使用该分支并记录具体提交，或携带 `data/exports/g1_offline_evaluation_code_20261007.zip` 与校验文件。旧训练源码 ZIP 保留为历史快照，不含新的离线/仿真评估入口。
 
 目标是使用官方预训练 Pi05，学习“按压停止按钮、旋转旋钮、拨动拨杆”三类示范。方法为双分支 LoRA，批大小 1，24 步动作窗口。不是重新训练一个大模型，也不是运行随机初始化的 CPU 调试网络。
 
@@ -238,7 +236,7 @@ nvidia-smi > data/linux_runs/logs/gpu.txt
 |---|---|---|
 | 训练计算 | 实际梯度更新、有限损失、可恢复检查点 | WSL 冻结视觉编码器配置已验证 100 步；原配置显存不足 |
 | 独立离线评估 | 固定验证噪声/采样设置，按三任务报告验证损失，始终使用训练统计 | `scripts/evaluate_g1_openpi.py` 已完成 12 条留出示范的训练前后配对评估，结果核验通过 |
-| 仿真闭环 | 当前图像/状态/指令→短段动作→重新观测，统计成功率、误操作、超时等 | **尚未实现正式模型闭环验证** |
+| 仿真闭环 | 当前图像/状态/指令→短段动作→重新观测，统计成功率、误操作、超时等 | Windows 首轮三任务各一次，30 秒截止，开发判据通过 0/3；未接入官方裁判 |
 
 不能把训练损失下降等同于机器人学会操作。验证集清单是 `data/batch_20261005/manifest_validation.json`，不能加入训练或重算归一化。评估入口、命令和统计方法见[独立离线评估](offline_evaluation.md)。本次宏平均验证 loss 为 `0.180635 → 0.167229`，双臂位置误差为 `57.408 → 55.042 mm`；右臂仍有 `105.924 mm` 的完整窗口位置误差，保持当前状态参照仅 `41.870 mm`。当前改善有限，尚不能证明模型能完成操作。
 
@@ -257,7 +255,7 @@ nvidia-smi > data/linux_runs/logs/gpu.txt
 | 第一次反向传播 OOM | 查看其他进程及显存峰值；batch 已为 1，需更大显存或单独验证低显存实现 |
 | 进程只显示 `Killed` | 检查主机/容器 RAM 限制和系统 OOM 记录，不一定是 GPU 显存 |
 | 日志几分钟不更新 | 分辨正在下载、视频解码还是首次 JAX 编译，观察 CPU/GPU/磁盘；避免重复启动第二个训练进程 |
-| 训练结束却没成功率 | 离线评估已有自动入口，但操作成功率需要新的仿真闭环测试；尚未测量不等于 0 或 100% |
+| 训练结束却没成功率 | 使用 `test_g1_openpi_orcalab.py` 执行新观测闭环；本次首轮 0/3，只代表三次具体测试，不能推广成总体或官方成功率 |
 
 如果需要中断恢复，应先为包装器接入并测试官方的 resume 机制，再进行长周期训练；不要手工移动或拼接检查点冒充恢复成功。
 
@@ -281,15 +279,23 @@ nvidia-smi > data/linux_runs/logs/gpu.txt
 
 模型仍使用完整 Pi05 预训练网络。最后一项是训练配置变更，不能将这次结果描述为原配置全部参数范围的微调成功。
 
-迁移到新环境时，先按第二至五节建立目录、安装依赖和导入数据，再将本次源码 ZIP 与 `.sha256` 放到 `~/g1-work/`，校验后覆盖基线源码：
+迁移到新环境时，先按第二至五节建立目录、安装依赖和导入数据，再在新建的项目 checkout 中获取完整评估分支：
+
+```bash
+git -C ~/g1-work/unitree-g1-auto-recognition fetch origin feat/openpi-evaluation-orcalab-20261007
+git -C ~/g1-work/unitree-g1-auto-recognition checkout --detach origin/feat/openpi-evaluation-orcalab-20261007
+git -C ~/g1-work/unitree-g1-auto-recognition rev-parse HEAD
+```
+
+也可将完整源码 ZIP 与 `.sha256` 放到 `~/g1-work/`，校验后解压到新建目录，不覆盖有其他改动的工作区：
 
 ```bash
 cd ~/g1-work
-sha256sum -c g1_wsl_training_code_20261007.zip.sha256
-openpi/.venv/bin/python -m zipfile -e g1_wsl_training_code_20261007.zip unitree-g1-auto-recognition
+sha256sum -c g1_offline_evaluation_code_20261007.zip.sha256
+openpi/.venv/bin/python -m zipfile -e g1_offline_evaluation_code_20261007.zip unitree-g1-auto-recognition
 ```
 
-源码包记录的是本次含未提交修改的文件快照，逐文件哈希位于 `SOURCE_MANIFEST.json`。它不会替代原始数据包、模型缓存或 OpenPI 环境。
+源码包记录完整提交的文件快照，具体提交与逐文件哈希位于 `SOURCE_MANIFEST.json`。它不会替代原始数据包、模型缓存或 OpenPI 环境。
 
 在本机 Linux Bash 中复现以下命令。实验名使用新名字，从官方基础权重开始；不会自动接着已有检查点续训。
 
@@ -316,4 +322,4 @@ set -o pipefail
 
 实测 100 次优化器更新已完成，保存目录编号为 `99`，恢复后的 `train_state.step` 为 `100`。全部 20 个 LoRA 参数张量相对于同一 GPU、同一 seed 42 的上游初始化值发生了变化；上游 A/B 均为正态随机初始化，不能以“非零”作为训练证明。最终优化器数组和已记录指标均有限，检查点训练统计与准备阶段一致。整卡占用峰值 11,321 MiB（包括桌面等占用），进程 RAM 峰值约 13.0 GiB，交换内存峰值约 3.88 GiB；恢复、编译、100 步训练和保存合计约 150.5 秒，首次安装及下载另计。
 
-这仍是短程实验：实际训练沿用上游 1,000 步学习率预热，100 步全部位于预热阶段，尚不能按充分训练的策略解读。主机内存余量较紧，保存时明显依赖交换空间；不能据此保证更大 batch、其他相机配置或更长训练一定稳定。独立离线评估已完成并显示有限改善，下一步应验证仿真闭环操作，再据失败原因调整数据、控制和训练规模；详见[实测结果](evaluation_results_20261007.md)。
+这仍是短程实验：实际训练沿用上游 1,000 步学习率预热，100 步全部位于预热阶段，尚不能按充分训练的策略解读。主机内存余量较紧，保存时明显依赖交换空间；不能据此保证更大 batch、其他相机配置或更长训练一定稳定。独立离线评估显示有限改善，Windows 闭环三任务首轮均未完成；下一步应据失败轨迹调整数据、控制和训练规模，并用相同评估协议复测。详见[实测结果](evaluation_results_20261007.md)。
